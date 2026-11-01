@@ -1,0 +1,49 @@
+"""
+專案名稱：W3 課堂練習 7 - 正規表達式字元類與量詞應用
+開發人員：A130E113-李承致
+開發環境：VSCodeUserSetup-x64-1.141.0
+"""
+import os
+import re
+import pandas as pd
+
+print("="*60)
+print("GitHub 專案：W3 課堂練習 7 - 正規表達式字元類與量詞")
+print("貢獻者：A130E113-李承致")
+print("="*60)
+
+base_dir = os.path.dirname(os.path.abspath(__file__))
+csv_path = os.path.join(base_dir, "authors.csv")
+
+if not os.path.exists(csv_path):
+    print(f"【系統錯誤】找不到資料庫檔案：{csv_path}")
+else:
+    df = pd.read_csv(csv_path)
+    first_row = df.iloc[0]
+
+    born_date = str(first_row["born_date"])
+    born_location = str(first_row["born_location"])
+    tags = str(first_row["tags"])
+
+    # =======================================================
+    # 利用「字元類 + 量詞」正規表達式 (re) 擷取 (李承致實作)
+    # =======================================================
+
+    # 任務 1: born_date 的完整年份 (\b 表示單字邊界，\d{4} 匹配 4 位數字)
+    ans1 = re.findall(r"\b\d{4}\b", born_date)
+
+    # 任務 2: born_date 的月份 (英文單字 [A-Za-z]+)
+    ans2 = re.findall(r"[A-Za-z]+", born_date)
+
+    # 任務 3: born_location 的每一個英文單字
+    ans3 = re.findall(r"[A-Za-z]+", born_location)
+
+    # 任務 4: tags 拆成一個一個標籤 ([a-z-]+ 包含小寫字母與連字號)
+    ans4 = re.findall(r"[a-z-]+", tags)
+
+    print("預期輸出\n")
+    print(f"① {ans1}")
+    print(f"② {ans2}")
+    print(f"③ {ans3}")
+    print(f"④ {ans4}")
+    print("\n[Commit Success] 練習 7 驗收通過 - 提交人：李承致")
