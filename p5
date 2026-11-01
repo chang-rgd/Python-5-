@@ -1,0 +1,111 @@
+"""
+專案名稱：W3 課後練習 4 - 作者數據清理與獨立去重統計
+開發人員：A130E113-李承致
+開發環境：VSCodeUserSetup-x64-1.141.0
+"""
+import os
+import pandas as pd
+import requests
+from bs4 import BeautifulSoup
+
+print("="*60)
+print("GitHub 專案：W3 課後練習 4 - 作者數據清洗與高階統計分析")
+print("貢獻者：A130E113-李承致")
+print("="*60)
+
+BASE_URL = "http://toscrape.com"
+HEADERS = {
+    "User-Agent": (
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML,"
+        " like Gecko) Chrome/120.0.0.0 Safari/537.36"
+    )
+}
+
+response = requests.get(BASE_URL, headers=HEADERS, timeout=10)
+response.encoding = "utf-8"
+soup = BeautifulSoup(response.text, "html.parser")
+
+quote_blocks = soup.find_all("div", class_="quote")
+data_list = []
+author_cache = {}
+
+print(f"[網路爬蟲] 開始執行，首頁共找到 {len(quote_blocks)} 筆名言...")
+
+for block in quote_blocks:
+    raw_quote = block.find("span", class_="text").text.strip()
+    clean_quote = raw_quote.strip('Status“”"') # 清洗前後引號
+
+    author_name = block.find("small", class_="author").text.strip()
+
+    tag_elements = block.find_all("a", class_="tag")
+    tags = ", ".join([tag.text.strip() for tag in tag_elements])
+
+    about_link = block.find("a", href=True)
+    author_url = BASE_URL + about_link["href"]
+
+    # 快取優化機制，避免重複對同作者頁面發送 Request
+    if author_name not in author_cache:
+        author_resp = requests.get(author_url, headers=HEADERS, timeout=10)
+        author_resp.encoding = "utf-8"
+        author_soup = BeautifulSoup(author_resp.text, "html.parser")
+
+        born_date = author_soup.find("span", class_="author-born-date").text.strip()
+        born_location = author_soup.find("span", class_="author-born-location").text.strip()
+
+        author_cache[author_name] = {
+            "born_date": born_date,
+            "born_location": born_location,
+        }
+    else:
+        born_date = author_cache[author_name]["born_date"]
+        born_location = author_cache[author_name]["born_location"]
+
+    data_list.append({
+        "name": author_name,
+        "born_date": born_date,
+        "born_location": born_location,
+        "quote": clean_quote,
+        "tags": tags,
+    })
+
+columns = ["name", "born_date", "born_location", "quote", "tags"]
+df = pd.DataFrame(data_list, columns=columns)
+
+base_dir = os.path.dirname(os.path.abspath(__file__))
+csv_path = os.path.join(base_dir, "authors.csv")
+df.to_csv(csv_path, index=False, encoding="utf-8-sig")
+print(f"[數據儲存] 已成功匯出至：{csv_path}\n")
+
+# =======================================================
+# 數據去重與高階統計分析 (李承致實作)
+# =======================================================
+
+# 對作者姓名進行去重 (每一位獨立作者只保留一筆基礎資訊)
+unique_authors = df[["name", "born_date", "born_location"]].drop_duplicates(subset=["name"]).copy()
+
+# 統計 1：清洗 born_location 提取出乾淨的國家名稱
+def extract_country(loc):
+    if not isinstance(loc, str):
+        return "Unknown"
+    parts = loc.split(",")
+    country = parts[-1].strip()
+    if country.startswith("in "):
+        country = country[3:].strip()
+    return country
+
+unique_authors["country"] = unique_authors["born_location"].apply(extract_country)
+country_counts = unique_authors["country"].value_counts()
+
+print("================ 各國作者人數統計 ================")
+print(country_counts)
+
+# 統計 2：時間序列轉換，追蹤誰最早出生
+unique_authors["parsed_birth_date"] = pd.to_datetime(unique_authors["born_date"], format="%B %d, %Y", errors="coerce")
+earliest_author = unique_authors.sort_values(by="parsed_birth_date").iloc[0]
+
+print("\n================ 最早出生的作者 ================")
+print(f"姓名: {earliest_author['name']}")
+print(f"出生日期: {earliest_author['born_date']}")
+print(f"出生地點: {earliest_author['born_location']}")
+print("="*60)
+print("[Commit Success] 課後練習 4 分析統計完成 - 提交人：李承致")
