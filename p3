@@ -1,0 +1,53 @@
+"""
+專案名稱：W3 課堂練習 8 - 高階中介字元與邊界錨定
+開發人員：A130E113-李承致
+開發環境：VSCodeUserSetup-x64-1.141.0
+"""
+import os
+import re
+import pandas as pd
+
+print("="*60)
+print("GitHub 專案：W3 課堂練習 8 - 高階中介字元與邊界錨定")
+print("貢獻者：A130E113-李承致")
+print("="*60)
+
+base_dir = os.path.dirname(os.path.abspath(__file__))
+csv_path = os.path.join(base_dir, "authors.csv")
+
+if not os.path.exists(csv_path):
+    print(f"【系統錯誤】找不到資料庫檔案：{csv_path}")
+else:
+    df = pd.read_csv(csv_path)
+    
+    # 取得第 1 筆與第 2 筆資料（J.K. Rowling 在第 2 筆）
+    row_1 = df.iloc[0]
+    row_2 = df.iloc[1]
+
+    born_date = str(row_1["born_date"])        
+    born_location = str(row_1["born_location"])  
+    name_2 = str(row_2["name"])                
+
+    # =======================================================
+    # 利用「中介字元（Metacharacters）」精準擷取 (李承致實作)
+    # =======================================================
+
+    # 任務 1: born_date 的「日」（運用前瞻斷言 (?=,) 鎖定逗號前的 1~2 位數數字）
+    ans1 = re.findall(r"\b\d{1,2}(?=,)", born_date)
+
+    # 任務 2: born_date 開頭的月份（^ 匹配字串開頭）
+    ans2 = re.findall(r"^[A-Za-z]+", born_date)
+
+    # 任務 3: born_location 的國家（$ 錨定字串結尾，擷取最後一段）
+    ans3 = re.findall(r"(?:,\s*|in\s+)([\w\s]+)$", born_location)
+    ans3 = [s.strip() for s in ans3]
+
+    # 任務 4: name 裡的英文縮寫 (如 J.K. Rowling 裡面的 J. 和 K.)
+    ans4 = re.findall(r"[A-Z]\.", name_2)
+
+    print("預期輸出\n")
+    print(f"① {ans1}")
+    print(f"② {ans2}")
+    print(f"③ {ans3}")
+    print(f"④ {ans4}")
+    print("\n[Commit Success] 練習 8 驗收通過 - 提交人：李承致")
